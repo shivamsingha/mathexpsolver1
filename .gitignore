@@ -1,3 +1,4 @@
 local
 log.txt
 .vscode
+.venv

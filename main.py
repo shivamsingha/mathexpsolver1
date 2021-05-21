@@ -4,13 +4,16 @@ class Exp:
         self.infix = []
         self.postfix = []
         self.str_to_infix()
-        self.infix_to_postfix()
-        print(self.postfix)
+        self.infix_to_postfix_indices()
+        self.print_infix()
+        self.evaluate_steps()
 
     def str_to_infix(self):
         temp = ""
         for c in self.input:
-            if c.isdecimal() or c == '.':
+            if c in ', ':
+                continue
+            elif c.isdecimal() or c == '.':
                 temp += c
             elif c in '()^/*+-':
                 if temp != '':
@@ -20,29 +23,83 @@ class Exp:
             else:
                 print("invalid")
                 exit(1)
-        self.infix.append(float(temp))
+        if temp!='':
+            self.infix.append(float(temp))
 
-    def infix_to_postfix(self):
+    def infix_to_postfix_indices(self):
         precedence = {'^': -1, '/': -2, '*': -3, '+': -4, '-': -5}
         stack = []
-        for x in self.infix:
+
+        for i, x in enumerate(self.infix):
             if isinstance(x, float):
-                self.postfix.append(x)
+                self.postfix.append(i)
             elif x in precedence:
-                if len(stack) == 0 or precedence[x] > precedence[stack[-1]] or '(' in stack:
-                    stack.append(x)
+                if len(stack) == 0 or self.infix[stack[-1]] == '(' or precedence[x] > precedence[self.infix[stack[-1]]]:
+                    stack.append(i)
                 else:
-                    while precedence[x] <= precedence[stack[-1]] or stack[-1] != '(':
+                    while len(stack) > 0 and (precedence[x] <= precedence[self.infix[stack[-1]]] or self.infix[stack[-1]] != '('):
                         self.postfix.append(stack.pop())
-                        stack.append(x)
-            elif x=='(':
-                stack.append(x)
-            elif x==')':
-                while stack[-1] != '(':
+                    stack.append(i)
+            elif x == '(':
+                stack.append(i)
+            elif x == ')':
+                while self.infix[stack[-1]] != '(':
                     self.postfix.append(stack.pop())
                 stack.pop()
 
+        while len(stack) > 0:
+            self.postfix.append(stack.pop())
+
+    def evaluate_steps(self):
+        stack = []
+        step_num = 0
+        for x in self.postfix:
+            if isinstance(self.infix[x], float):
+                stack.append(x)
+            else:
+                operand2 = stack.pop()
+                operand1 = stack.pop()
+                operator = self.infix[x]
+                exp = str(self.infix[operand1]) + \
+                    operator+str(self.infix[operand2])
+                result = eval(exp)
+                self.infix[operand1] = ''
+                self.infix[operand2] = ''
+                self.infix[x] = result
+                stack.append(x)
+                step_num += 1
+                self.add_step(step_num, operator, exp)
+
+    def add_step(self, step_num, operator, exp):
+        current_exp = ''
+        operation = ''
+        if operator == '^':
+            operation = 'Rasing to the power'
+        elif operator == '/':
+            operation = 'Performing division'
+        elif operator == '*':
+            operation = 'Performing multiplication'
+        elif operator == '+':
+            operation = 'Performing addition'
+        elif operator == '-':
+            operation = 'Performing subtraction'
+
+        for x in self.infix:
+            current_exp += str(x)
+            current_exp = current_exp.replace('()', '')
+
+        print(
+            f'Step {step_num}: {operation}, {exp}\n\t{current_exp}', end='\n\n')
+
+    def print_postfix(self):
+        for x in self.postfix:
+            print(self.infix[x], end='')
+
+    def print_infix(self):
+        for x in self.infix:
+            print(x, end=' ')
+        print('\n\n')
+
 
 if __name__ == "__main__":
-    while True:
-        Exp("(1+0.1)/0.01*100")
+    Exp(input("Enter expression: "))
